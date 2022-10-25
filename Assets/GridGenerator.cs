@@ -274,7 +274,7 @@ public class GridGenerator : MonoBehaviour
         return gradient;
     }
 
-     private Vector2 GetSeed()
+    private Vector2 GetSeed()
     {
         return new Vector2(Mathf.Sqrt(Seed), Mathf.Sqrt(Seed));
     }

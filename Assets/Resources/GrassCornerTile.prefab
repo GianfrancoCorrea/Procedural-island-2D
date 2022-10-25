@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5066646018339203567}
   - component: {fileID: 2146040651065600466}
+  - component: {fileID: 411327054450295416}
   m_Layer: 0
   m_Name: GrassCornerTile
   m_TagString: Untagged
@@ -82,3 +83,27 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!68 &411327054450295416
+EdgeCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3978622384080024466}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_EdgeRadius: 0
+  m_Points:
+  - {x: -0.34486791, y: -0.4948181}
+  - {x: -0.27864388, y: 0.1315478}
+  - {x: -0.11846224, y: 0.28160098}
+  - {x: 0.4946507, y: 0.32631248}
+  m_AdjacentStartPoint: {x: 0, y: 0}
+  m_AdjacentEndPoint: {x: 0, y: 0}
+  m_UseAdjacentStartPoint: 0
+  m_UseAdjacentEndPoint: 0
