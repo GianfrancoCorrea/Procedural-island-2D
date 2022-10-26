@@ -11,24 +11,29 @@ public class GridGenerator : MonoBehaviour
     public float tileSize = 1f;
     public float waterLevel = 0.4f;
     Cell[,] grid;
-    
+
     [Header("Noise Settings")]
     public float NoiseScale, IslandSize;
     [Range(1, 20)] public int NoiseOctaves;
     [Range(0, 99999999)] public int Seed;
 
+    [Header("tiles Settings")]
+    // dictionary of tiles
+    public Dictionary<string, GameObject[]> tiles = new Dictionary<string, GameObject[]>();
+
+
 
     void Start()
     {
-       GenerateGrid();
-       GenerateGridSprites();
+        GenerateGrid();
+        GenerateGridSprites();
     }
     public void OnValidate()
     {
         // delay the grid generation until the editor is done
         EditorApplication.delayCall += () =>
         {
-           if (grid != null)
+            if (grid != null)
             {
                 Debug.Log("Grid Updated");
                 GenerateGrid();
@@ -49,7 +54,7 @@ public class GridGenerator : MonoBehaviour
     void GenerateGrid()
     {
         // destroy the old grid
-        DestroyGrid(); 
+        DestroyGrid();
 
         // create a new grid
         grid = new Cell[GridSize, GridSize];
@@ -60,12 +65,11 @@ public class GridGenerator : MonoBehaviour
                 // get noise value 
                 float noise = Noisefunction(x, y, GetSeed());
                 // create & fill cell data
-                Cell cell = new Cell();
-                cell.isWater = noise < waterLevel;
-                cell.noiseValue = noise;
+                Cell cell = new Cell(waterLevel, noise, new Vector2Int(x, y));
+
                 // add cell to grid
                 grid[x, y] = cell;
-                
+
             }
         }
 
@@ -82,52 +86,42 @@ public class GridGenerator : MonoBehaviour
         GameObject landTileReference = (GameObject)Instantiate(Resources.Load("LandTile"));
         GameObject grassCornerTile = (GameObject)Instantiate(Resources.Load("GrassCornerTile"));
         GameObject grassEdgeTile = (GameObject)Instantiate(Resources.Load("GrassEdge"));
+        GameObject sandTileReference = (GameObject)Instantiate(Resources.Load("SandTile"));
+        GameObject hillTileReference = (GameObject)Instantiate(Resources.Load("HillTile"));
+        GameObject forestTileReference = (GameObject)Instantiate(Resources.Load("ForestTile"));
 
-        GameObject groundTile = null;
         GameObject waterTile = null;
         float posX = x * tileSize;
         float posY = y * tileSize;
-        
+
         // allways spawn water tiles
         waterTile = Instantiate(waterTileReference, new Vector3(posX, posY, 0), Quaternion.identity);
         // set layout order & parent
-        waterTile.GetComponent<SpriteRenderer>().sortingOrder = 0;
+        waterTile.GetComponent<SpriteRenderer>().sortingOrder = CellType.Water.GetHashCode();
         waterTile.transform.parent = transform;
 
         // if not water
-        if (!grid[x, y].isWater) {
-            if(IsOnLandEdge(x, y))
+        if (!grid[x, y].isWater)
+        {
+            // check by cellType
+            switch (grid[x, y].cellType)
             {
-                if(IsOnLandCorner(x, y))
-                {
-                    // spawn grass corner
-                    float rotation = CalculateTileCornerRotation(x, y);
-                    groundTile = Instantiate(
-                        grassCornerTile,
-                        new Vector3(posX, posY, 0),
-                        Quaternion.Euler(0, 0, rotation) // rotate the tile
-                    );
-                }
-                else
-                {
-                    // spawn grass edge
-                    float rotation = CalculateTileEdgeRotation(x, y);
-                    groundTile = Instantiate(
-                        grassEdgeTile,
-                        new Vector3(posX, posY, 0),
-                        Quaternion.Euler(0, 0, rotation) // rotate the tile
-                    );
-                }
+                case CellType.Sand:
+                    SetTile(sandTileReference, posX, posY, CellType.Sand);
+                    break;
+                case CellType.Grass:
+                    SetTile(sandTileReference, posX, posY, CellType.Sand); // sand under grass
+                    SetTile(landTileReference, posX, posY, CellType.Grass);
+                    break;
+                case CellType.Forest:
+                    SetTile(landTileReference, posX, posY, CellType.Grass); // grass under forest
+                    SetTile(forestTileReference, posX, posY, CellType.Forest);
+                    break;
+                case CellType.Mountain:
+                    SetTile(forestTileReference, posX, posY, CellType.Forest); // forest under mountain
+                    SetTile(hillTileReference, posX, posY, CellType.Mountain);
+                    break;
             }
-            else
-            {
-                // spawn land tile
-                groundTile = Instantiate(landTileReference, new Vector3(posX, posY, 0), Quaternion.identity);
-
-            }
-            // set layout order & parent
-            groundTile.GetComponent<SpriteRenderer>().sortingOrder = 1;
-            groundTile.transform.parent = transform;
         }
 
         // destroy resources
@@ -135,6 +129,17 @@ public class GridGenerator : MonoBehaviour
         Destroy(landTileReference);
         Destroy(grassEdgeTile);
         Destroy(grassCornerTile);
+        Destroy(sandTileReference);
+        Destroy(hillTileReference);
+        Destroy(forestTileReference);
+    }
+
+    void SetTile(GameObject tile, float posX, float posY, CellType cellType)
+    {
+        // get the tile
+        GameObject groundTile = Instantiate(tile, new Vector3(posX, posY, 0), Quaternion.identity);
+        groundTile.GetComponent<SpriteRenderer>().sortingOrder = cellType.GetHashCode();
+        groundTile.transform.parent = transform;
     }
 
     bool IsOnLandCorner(int x, int y)
@@ -182,19 +187,20 @@ public class GridGenerator : MonoBehaviour
 
         return rotation;
     }
-    
-    public void GenerateGridSprites() {
+
+    public void GenerateGridSprites()
+    {
         // iterate grid
         for (int x = 0; x < GridSize; x++)
         {
             for (int y = 0; y < GridSize; y++)
-            {   
+            {
                 // set sprite for cell
                 SetCellSprite(x, y);
             }
         }
 
-       
+
     }
 
     public bool IsOnLandEdge(int x, int y)
@@ -212,7 +218,7 @@ public class GridGenerator : MonoBehaviour
                 }
             }
         }
-        
+
         return false;
     }
 
@@ -233,7 +239,7 @@ public class GridGenerator : MonoBehaviour
                 if (checkX >= 0 && checkX < GridSize && checkY >= 0 && checkY < GridSize)
                 {
                     Cell cell = grid[checkX, checkY];
-                    if(cell != null)
+                    if (cell != null)
                     {
                         neighbours[i + 1, j + 1] = cell;
                     }
@@ -278,5 +284,5 @@ public class GridGenerator : MonoBehaviour
     {
         return new Vector2(Mathf.Sqrt(Seed), Mathf.Sqrt(Seed));
     }
-    
+
 }
